@@ -1,0 +1,22 @@
+# Ignore les modules npm installés localement
+/node_modules
+
+# Ignore les fichiers de configuration dotenv locaux
+.env
+
+# Ignore les fichiers de logs
+logs
+*.log
+
+# Ignore les fichiers de sauvegarde et de build
+*.swp
+*.bak
+.DS_Store
+
+# Ignore les fichiers de configuration pour certains éditeurs
+.idea/
+.vscode/
+
+# Ignore les fichiers de dépendances d'éditeurs de texte
+*.sublime-project
+*.sublime-workspace
