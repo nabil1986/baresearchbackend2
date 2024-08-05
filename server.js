@@ -40,6 +40,39 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
+
+
+const calculateNextGreasingDate = (createdAt, greasePeriod) => {
+  const date = new Date(createdAt);
+  switch (greasePeriod) {
+    case 'JOURNALIERE':
+      date.setDate(date.getDate() + 1);
+      break;
+    case 'HEBDOMADAIRE':
+      date.setDate(date.getDate() + 7);
+      break;
+    case 'MENSUELLE':
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case 'BI MENSUELLE':
+      date.setMonth(date.getMonth() + 2);
+      break;
+    case 'TRIMESTRIELLE':
+      date.setMonth(date.getMonth() + 3);
+      break;
+    case 'SEMESTRIELLE':
+      date.setMonth(date.getMonth() + 6);
+      break;
+    case 'ANNUELLE':
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    default:
+      return null;
+  }
+  return date.toISOString().split('T')[0]; // Return date in YYYY-MM-DD format
+};
+
+
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
@@ -73,10 +106,13 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 
 
 app.post('/devices', (req, res) => {
-  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
   const level = level_control === 'oui' ? 1 : 0;
-  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse], (err, result) => {
+  const createdAt = new Date();
+  const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+
+  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -98,10 +134,13 @@ app.get('/devices', (req, res) => {
 
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
-  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
   const level = level_control === 'oui' ? 1 : 0;
-  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ? WHERE id = ?';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse, id], (err, result) => {
+  const createdAt = new Date();
+  const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+
+  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ? WHERE id = ?';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -109,6 +148,9 @@ app.put('/devices/:id', (req, res) => {
     }
   });
 });
+
+
+
 
 app.delete('/devices/:id', (req, res) => {
   const { id } = req.params;
@@ -199,6 +241,81 @@ app.get('/articles/designations', (req, res) => {
 });
 
 //--------------------------------------------------------- Articles
+
+//--------------------------------------------------------- Graisse période
+app.use('/graisse_periode', authenticateJWT);
+
+app.get('/graisse_periode', (req, res) => {
+  const query = 'SELECT periode FROM periodes';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+//--------------------------------------------------------- Graisse période
+
+
+
+//--------------------------------------------------------- Opération Graisse
+app.use('/operationgraissage', authenticateJWT);
+
+app.post('/operationgraissage', (req, res) => {
+  const { numero_inventaire, quantite_graisse, level_control, points_a_controler, termine, temps_graissage, anomalie_constatee } = req.body;
+  const level = level_control === 'oui' ? 1 : 0;
+  const query = 'INSERT INTO operationgraissage (numero_inventaire, quantite_graisse, niveau, points_a_controler, termine, temps_graissage, anomalie_constatee) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [numero_inventaire, quantite_graisse, level, points_a_controler, termine, temps_graissage, anomalie_constatee], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).send(result);
+    }
+  });
+});
+
+app.get('/operationgraissage', (req, res) => {
+  const query = 'SELECT * FROM operationgraissage';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.put('/operationgraissage/:id', (req, res) => {
+  const { id } = req.params;
+  const { numero_inventaire, quantite_graisse, level_control, points_a_controler, termine, temps_graissage, anomalie_constatee } = req.body;
+  const level = level_control === 'oui' ? 1 : 0;
+  const query = 'UPDATE operationgraissage SET numero_inventaire = ?, quantite_graisse = ?, niveau = ?, points_a_controler = ?, termine = ?, temps_graissage = ?, anomalie_constatee = ? WHERE id = ?';
+  db.query(query, [numero_inventaire, quantite_graisse, level, points_a_controler, termine, temps_graissage, anomalie_constatee, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+app.delete('/operationgraissage/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM operationgraissage WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+
+
+//--------------------------------------------------------- Opération Graisse
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
