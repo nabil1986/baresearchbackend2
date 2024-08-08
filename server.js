@@ -106,13 +106,13 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 
 
 app.post('/devices', (req, res) => {
-  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
-  const level = level_control === 'oui' ? 1 : 0;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
+
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
   const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage], (err, result) => {
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -134,13 +134,12 @@ app.get('/devices', (req, res) => {
 
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
-  const { device_name, grease_quantity, grease_period, observation, level_control, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
-  const level = level_control === 'oui' ? 1 : 0;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage } = req.body;
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
   const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ? WHERE id = ?';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, level, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, id], (err, result) => {
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -289,10 +288,10 @@ app.get('/operationgraissage', (req, res) => {
 
 app.put('/operationgraissage/:id', (req, res) => {
   const { id } = req.params;
-  const { numero_inventaire, quantite_graisse, level_control, points_a_controler, termine, temps_graissage, anomalie_constatee } = req.body;
+  const { numero_inventaire, quantite_graisse, level_control, anomalie_constatee } = req.body;
   const level = level_control === 'oui' ? 1 : 0;
-  const query = 'UPDATE operationgraissage SET numero_inventaire = ?, quantite_graisse = ?, niveau = ?, points_a_controler = ?, termine = ?, temps_graissage = ?, anomalie_constatee = ? WHERE id = ?';
-  db.query(query, [numero_inventaire, quantite_graisse, level, points_a_controler, termine, temps_graissage, anomalie_constatee, id], (err, result) => {
+  const query = 'UPDATE operationgraissage SET numero_inventaire = ?, quantite_graisse = ?, niveau = ?, anomalie_constatee = ? WHERE id = ?';
+  db.query(query, [numero_inventaire, quantite_graisse, level, anomalie_constatee, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -317,6 +316,24 @@ app.delete('/operationgraissage/:id', (req, res) => {
 
 //--------------------------------------------------------- Opération Graisse
 
+
+//--------------------------------------------------------- typeControle
+
+app.use('/typeControle', authenticateJWT);
+
+app.get('/typeControle', (req, res) => {
+  const query = 'SELECT type FROM typeControle';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+//--------------------------------------------------------- typeControle
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
@@ -324,3 +341,5 @@ app.get('/', (req, res) => {
 app.listen(3001, () => {
   console.log('Server is running on port 3001');
 });
+
+
