@@ -106,13 +106,13 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 
 
 app.post('/devices', (req, res) => {
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage } = req.body;
 
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
-  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage, equipement_localisation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage, equipement_localisation], (err, result) => {
+  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage, equipement_localisation, tempsGraissage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -134,12 +134,12 @@ app.get('/devices', (req, res) => {
 
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage } = req.body;
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
-  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ?, equipement_localisation = ? WHERE id = ?';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, equipement_localisation, id], (err, result) => {
+  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ? WHERE id = ?';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -352,6 +352,7 @@ app.get('/localisationequipement', (req, res) => {
 });
 
 //--------------------------------------------------------- localisation
+
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
