@@ -1,14 +1,19 @@
+server.js :
+
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
+const multer = require('multer');
+const path = require('path');
 
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
+const upload = multer({ dest: 'uploads/' }); // Dossier où les fichiers seront stockés
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -91,6 +96,17 @@ app.post('/login', (req, res) => {
 });
 
 app.use('/devices', authenticateJWT);
+
+
+// Route pour le téléchargement de fichiers
+app.post('/upload', upload.single('photo'), (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).send('Aucun fichier téléchargé.');
+  }
+  // Vous pouvez maintenant enregistrer le fichier ou son chemin dans la base de données
+  res.send(`Fichier ${file.originalname} téléchargé avec succès.`);
+});
 
 // Vérifier si un numéro d'inventaire existe déjà
 app.get('/devices/check-numero-inventaire', (req, res) => {
