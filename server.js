@@ -264,10 +264,10 @@ app.get('/graisse_periode', (req, res) => {
 app.use('/operationgraissage', authenticateJWT);
 
 app.post('/operationgraissage', (req, res) => {
-  const { numero_inventaire, quantite_graisse, level_control, points_a_controler, termine, temps_graissage, anomalie_constatee } = req.body;
+  const { numero_inventaire, quantite_graisse, level_control, points_a_controler, termine, temps_graissage, anomalie_constatee, operateur } = req.body;
   const level = level_control === 'oui' ? 1 : 0;
-  const query = 'INSERT INTO operationgraissage (numero_inventaire, quantite_graisse, niveau, points_a_controler, termine, temps_graissage, anomalie_constatee) VALUES (?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [numero_inventaire, quantite_graisse, level, points_a_controler, termine, temps_graissage, anomalie_constatee], (err, result) => {
+  const query = 'INSERT INTO operationgraissage (numero_inventaire, quantite_graisse, niveau, points_a_controler, termine, temps_graissage, anomalie_constatee, operateur) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [numero_inventaire, quantite_graisse, level, points_a_controler, termine, temps_graissage, anomalie_constatee, operateur], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -289,10 +289,10 @@ app.get('/operationgraissage', (req, res) => {
 
 app.put('/operationgraissage/:id', (req, res) => {
   const { id } = req.params;
-  const { numero_inventaire, quantite_graisse, level_control, anomalie_constatee } = req.body;
+  const { numero_inventaire, quantite_graisse, level_control, anomalie_constatee, operateur } = req.body;
   const level = level_control === 'oui' ? 1 : 0;
-  const query = 'UPDATE operationgraissage SET numero_inventaire = ?, quantite_graisse = ?, niveau = ?, anomalie_constatee = ? WHERE id = ?';
-  db.query(query, [numero_inventaire, quantite_graisse, level, anomalie_constatee, id], (err, result) => {
+  const query = 'UPDATE operationgraissage SET numero_inventaire = ?, quantite_graisse = ?, niveau = ?, anomalie_constatee = ?, operateur = ? WHERE id = ?';
+  db.query(query, [numero_inventaire, quantite_graisse, level, anomalie_constatee, operateur, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -353,6 +353,42 @@ app.get('/localisationequipement', (req, res) => {
 });
 
 //--------------------------------------------------------- localisation
+
+// --------------------------------------------------------------------Update date prochain graissage dans devices apres operation de graissage
+app.use('/devices/:id/date-prochain-graissage', authenticateJWT);
+app.put('/devices/:id/date-prochain-graissage', authenticateJWT, (req, res) => {
+  const { id } = req.params;
+
+  // Étape 1: Récupérer le grease_period du device
+  const getDeviceQuery = 'SELECT grease_period FROM devices WHERE id = ?';
+  db.query(getDeviceQuery, [id], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    if (results.length === 0) {
+      return res.status(404).send('Device not found');
+    }
+
+    const grease_period = results[0].grease_period;
+
+    // Étape 2: Calculer la date de prochain graissage
+    const createdAt = new Date();
+    const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+
+    // Étape 3: Mettre à jour la date de prochain graissage
+    const updateQuery = 'UPDATE devices SET date_prochain_graissage = ? WHERE id = ?';
+    db.query(updateQuery, [dateProchainGraissage, id], (err, result) => {
+      if (err) {
+        res.status(500).send(err);
+      } else {
+        res.status(200).send(result);
+      }
+    });
+  });
+});
+
+
+//--------------------------------------------------------- Update date prochain graissage dans devices apres operation de graissage
 
 
 app.get('/', (req, res) => {
