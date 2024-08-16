@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
+const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 
 const app = express();
@@ -16,6 +18,33 @@ const db = mysql.createConnection({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 });
+
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  connectionTimeout: 5000 // délai d'attente en ms
+});
+const sendEmail = (to, subject, text) => {
+ const mailOptions = {
+  from: '"Nabil" <n.kacimi@maghreblogiciel.com>', // sender address
+  to: 'kaciminabil@gmail.com', // list of receivers
+  subject: 'Subject of your email', // Subject line
+  text, // plain text body
+ };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email: ', error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
+};
 
 db.connect((err) => {
   if (err) {
@@ -74,7 +103,8 @@ const calculateNextGreasingDate = (createdAt, greasePeriod) => {
 };
 
 
-app.post('/login', (req, res) => {
+
+{/*app.post('/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
   db.query(query, [username, password], (err, results) => {
@@ -88,9 +118,82 @@ app.post('/login', (req, res) => {
       res.status(401).send('Invalid credentials');
     }
   });
+});*/}
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  const query = 'SELECT * FROM users WHERE username = ?';
+
+  db.query(query, [username], (err, results) => {
+    if (err) {
+      return res.status(500).send('Erreur du serveur');
+    }
+
+    if (results.length === 0) {
+      return res.status(401).send('Nom d\'utilisateur ou mot de passe incorrect');
+    }
+
+    const user = results[0];
+
+    // Comparer le mot de passe saisi avec le mot de passe haché
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err) {
+        return res.status(500).send('Erreur lors de la comparaison des mots de passe');
+      }
+
+      if (isMatch) {
+        const token = jwt.sign({ username: user.username, typeUser: user.typeUser }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        res.json({ token, typeUser: user.typeUser });
+      } else {
+        res.status(401).send('Nom d\'utilisateur ou mot de passe incorrect');
+      }
+    });
+  });
 });
 
-app.use('/devices', authenticateJWT);
+
+//----------------------------------------------------------------------- Register
+//app.use('/register', authenticateJWT);
+
+app.post('/register', (req, res) => {
+  const { username, password, typeUser } = req.body;
+
+  // Vérifier si le username existe déjà
+  const checkQuery = 'SELECT * FROM users WHERE username = ?';
+
+  db.query(checkQuery, [username], (err, results) => {
+    if (err) {
+      return res.status(500).send('Erreur du serveur');
+    }
+
+    if (results.length > 0) {
+      return res.status(400).send('Nom d\'utilisateur déjà pris');
+    }
+
+    // Hacher le mot de passe avant de l'enregistrer
+    const saltRounds = 10;
+
+    bcrypt.hash(password, saltRounds, (err, hash) => {
+      if (err) {
+        console.error('Erreur lors du hachage du mot de passe:', err);
+        return res.status(500).send('Erreur lors du hachage du mot de passe');
+      }
+
+      // Insérer le nouvel utilisateur dans la base de données
+      const insertQuery = 'INSERT INTO users (username, password, typeUser) VALUES (?, ?, ?)';
+      db.query(insertQuery, [username, hash, typeUser], (err, result) => {
+        if (err) {
+          return res.status(500).send('Erreur lors de l\'insertion de l\'utilisateur');
+        }
+        res.status(201).send('Utilisateur enregistré avec succès');
+      });
+    });
+  });
+});
+
+//----------------------------------------------------------------------- Register
+
+//app.use('/devices', authenticateJWT);
 
 // Vérifier si un numéro d'inventaire existe déjà
 app.get('/devices/check-numero-inventaire', (req, res) => {
@@ -118,6 +221,18 @@ app.post('/devices', (req, res) => {
       res.status(500).send(err);
     } else {
       res.status(201).send(result);
+
+      // Envoyer l'email après l'insertion réussie dans la base de données
+                    const emailText = `Un nouvel appareil a été ajouté:
+                    - Nom: ${device_name}
+                    - Numéro d'inventaire: ${numero_inventaire}
+                    - Quantité de graisse: ${grease_quantity}
+                    - Période de graissage: ${grease_period}
+                    - Observation: ${observation}
+                    - Date du prochain graissage: ${dateProchainGraissage}`;
+
+                    sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
+
     }
   });
 });
