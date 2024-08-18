@@ -19,7 +19,7 @@ const db = mysql.createConnection({
   database: process.env.DB_NAME,
 });
 
-const transporter = nodemailer.createTransport({
+{/*const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
   secure: false, // true for 465, false for other ports
@@ -44,7 +44,9 @@ const sendEmail = (to, subject, text) => {
       console.log('Email sent: ' + info.response);
     }
   });
-};
+};*/}
+
+
 
 db.connect((err) => {
   if (err) {
@@ -222,16 +224,45 @@ app.post('/devices', (req, res) => {
     } else {
       res.status(201).send(result);
 
-      // Envoyer l'email après l'insertion réussie dans la base de données
-                    const emailText = `Un nouvel appareil a été ajouté:
-                    - Nom: ${device_name}
-                    - Numéro d'inventaire: ${numero_inventaire}
-                    - Quantité de graisse: ${grease_quantity}
-                    - Période de graissage: ${grease_period}
-                    - Observation: ${observation}
-                    - Date du prochain graissage: ${dateProchainGraissage}`;
+      // Fonction sendEmail définie dans la portée de la route
+            const transporter = nodemailer.createTransport({
+              host: process.env.EMAIL_HOST,
+              port: process.env.EMAIL_PORT,
+              secure: false,
+              auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+              },
+              connectionTimeout: 5000, // délai d'attente en ms
+            });
 
-                    sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
+            const sendEmail = (to, subject, text) => {
+              const mailOptions = {
+                from: '"Nabil" <n.kacimi@maghreblogiciel.com>',
+                to,
+                subject,
+                text,
+              };
+
+              transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                  console.error('Error sending email: ', error);
+                } else {
+                  console.log('Email sent: ' + info.response);
+                }
+              });
+            };
+
+            // Envoyer l'email après l'insertion réussie dans la base de données
+            const emailText = `Un nouvel appareil a été ajouté:
+              - Nom: ${device_name}
+              - Numéro d'inventaire: ${numero_inventaire}
+              - Quantité de graisse: ${grease_quantity}
+              - Période de graissage: ${grease_period}
+              - Observation: ${observation}
+              - Date du prochain graissage: ${dateProchainGraissage}`;
+
+            sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
 
     }
   });
