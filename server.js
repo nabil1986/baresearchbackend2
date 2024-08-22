@@ -488,7 +488,7 @@ app.get('/typeControle', (req, res) => {
 app.use('/localisationequipement', authenticateJWT);
 
 app.get('/localisationequipement', (req, res) => {
-  const query = 'SELECT localisation FROM localisationequipement';
+  const query = 'SELECT localisation FROM localisationequipement ORDER BY ASC';
   db.query(query, (err, results) => {
     if (err) {
       res.status(500).send(err);
