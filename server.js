@@ -212,13 +212,13 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 
 
 app.post('/devices', (req, res) => {
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile } = req.body;
 
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
-  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage, equipement_localisation, tempsGraissage, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, photo], (err, result) => {
+  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -281,12 +281,12 @@ app.get('/devices', (req, res) => {
 
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile } = req.body;
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
-  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ?, photo = ? WHERE id = ?';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, photo, id], (err, result) => {
+  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, date_prochain_graissage = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ?, photo = ?, gamme = ?, designation_grade_huile = ? WHERE id = ?';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -377,6 +377,28 @@ app.delete('/articles/:id', (req, res) => {
 
 app.get('/articles/designations', (req, res) => {
   const query = 'SELECT designation_article FROM articles';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.get('/articles/graisse', (req, res) => {
+  const query = 'SELECT designation_article FROM articles where type_article = "G" ';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.get('/articles/huile', (req, res) => {
+  const query = 'SELECT designation_article FROM articles where type_article = "H" ';
   db.query(query, (err, results) => {
     if (err) {
       res.status(500).send(err);
