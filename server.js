@@ -283,8 +283,6 @@ app.get('/devices', (req, res) => {
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
   const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage } = req.body;
-  //const createdAt = new Date();
-  //const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
   const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ?, photo = ?, gamme = ?, designation_grade_huile = ?, etage = ? WHERE id = ?';
   db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, id], (err, result) => {
