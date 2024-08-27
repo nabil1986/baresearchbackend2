@@ -327,9 +327,9 @@ app.get('/articles/check-code-article', (req, res) => {
 });
 
 app.post('/articles', (req, res) => {
-  const { code_article, designation_article } = req.body;
-  const query = 'INSERT INTO articles (code_article, designation_article) VALUES (?, ?)';
-  db.query(query, [code_article, designation_article], (err, result) => {
+  const { code_article, designation_article, type_article } = req.body;
+  const query = 'INSERT INTO articles (code_article, designation_article, type_article) VALUES (?, ?, ?)';
+  db.query(query, [code_article, designation_article, type_article], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -351,9 +351,9 @@ app.get('/articles', (req, res) => {
 
 app.put('/articles/:id', (req, res) => {
   const { id } = req.params;
-  const { code_article, designation_article } = req.body;
-  const query = 'UPDATE articles SET code_article = ?, designation_article = ? WHERE id = ?';
-  db.query(query, [code_article, designation_article, id], (err, result) => {
+  const { code_article, designation_article, type_article } = req.body;
+  const query = 'UPDATE articles SET code_article = ?, designation_article = ?, type_article = ? WHERE id = ?';
+  db.query(query, [code_article, designation_article, type_article, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -376,6 +376,17 @@ app.delete('/articles/:id', (req, res) => {
 
 app.get('/articles/designations', (req, res) => {
   const query = 'SELECT designation_article FROM articles';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.get('/articles/typeArticles', (req, res) => {
+  const query = 'SELECT DISTINCT type_article FROM articles';
   db.query(query, (err, results) => {
     if (err) {
       res.status(500).send(err);
