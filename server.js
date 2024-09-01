@@ -327,9 +327,9 @@ app.get('/articles/check-code-article', (req, res) => {
 });
 
 app.post('/articles', (req, res) => {
-  const { code_article, designation_article, type_article } = req.body;
-  const query = 'INSERT INTO articles (code_article, designation_article, type_article) VALUES (?, ?, ?)';
-  db.query(query, [code_article, designation_article, type_article], (err, result) => {
+  const { code_article, designation_article, type_article, localisation_article } = req.body;
+  const query = 'INSERT INTO articles (code_article, designation_article, type_article, localisation_article) VALUES (?, ?, ?, ?)';
+  db.query(query, [code_article, designation_article, type_article, localisation_article], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -351,9 +351,9 @@ app.get('/articles', (req, res) => {
 
 app.put('/articles/:id', (req, res) => {
   const { id } = req.params;
-  const { code_article, designation_article, type_article } = req.body;
-  const query = 'UPDATE articles SET code_article = ?, designation_article = ?, type_article = ? WHERE id = ?';
-  db.query(query, [code_article, designation_article, type_article, id], (err, result) => {
+  const { code_article, designation_article, type_article, localisation_article } = req.body;
+  const query = 'UPDATE articles SET code_article = ?, designation_article = ?, type_article = ?, localisation_article = ? WHERE id = ?';
+  db.query(query, [code_article, designation_article, type_article, localisation_article, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
@@ -515,7 +515,7 @@ app.get('/typeControle', (req, res) => {
 
 
 
-//--------------------------------------------------------- localisation
+//--------------------------------------------------------- localisation Equipement
 
 app.use('/localisationequipement', authenticateJWT);
 
@@ -530,7 +530,24 @@ app.get('/localisationequipement', (req, res) => {
   });
 });
 
-//--------------------------------------------------------- localisation
+//--------------------------------------------------------- localisation Equipement
+
+//--------------------------------------------------------- localisation Article
+
+app.use('/localisationarticle', authenticateJWT);
+
+app.get('/localisationarticle', (req, res) => {
+  const query = 'SELECT localisation FROM localisationArticle ORDER BY localisation ASC';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+//--------------------------------------------------------- localisation Article
 
 // --------------------------------------------------------------------Update date prochain graissage dans devices apres operation de graissage
 app.use('/devices/:id/date-prochain-graissage', authenticateJWT);
