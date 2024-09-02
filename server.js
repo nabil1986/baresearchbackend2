@@ -465,6 +465,17 @@ app.get('/operationgraissage', (req, res) => {
   });
 });
 
+app.get('/operationgraissageavecdesignation', (req, res) => {
+  const query = 'SELECT * FROM operationgraissage JOIN devices ON operationgraissage.numero_inventaire = devices.numero_inventaire';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
 app.put('/operationgraissage/:id', (req, res) => {
   const { id } = req.params;
   const { numero_inventaire, quantite_graisse, level_control, anomalie_constatee, operateur } = req.body;
