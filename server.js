@@ -195,6 +195,53 @@ app.post('/register', (req, res) => {
 
 //----------------------------------------------------------------------- Register
 
+//------------------------------------------------------------------------ Change password
+app.put('/change-password', (req, res) => {
+  const { username, currentPassword, newPassword } = req.body;
+
+  db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
+    if (err) {
+      console.error('Erreur SQL:', err);
+      return res.status(500).json({ message: 'Erreur du serveur' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    const user = results[0];
+
+    bcrypt.compare(currentPassword, user.password, (err, isMatch) => {
+      if (err) {
+        console.error('Erreur bcrypt:', err);
+        return res.status(500).json({ message: 'Erreur du serveur' });
+      }
+
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Mot de passe actuel incorrect' });
+      }
+
+      bcrypt.hash(newPassword, 10, (err, hashedPassword) => {
+        if (err) {
+          console.error('Erreur de hachage:', err);
+          return res.status(500).json({ message: 'Erreur du serveur' });
+        }
+
+        db.query('UPDATE users SET password = ? WHERE username = ?', [hashedPassword, username], (err, result) => {
+          if (err) {
+            console.error('Erreur SQL lors de la mise à jour:', err);
+            return res.status(500).json({ message: 'Erreur lors de la mise à jour du mot de passe' });
+          }
+
+          res.status(200).json({ message: 'Mot de passe changé avec succès' });
+        });
+      });
+    });
+  });
+});
+
+//------------------------------------------------------------------------------change password
+
 //app.use('/devices', authenticateJWT);
 
 // Vérifier si un numéro d'inventaire existe déjà
