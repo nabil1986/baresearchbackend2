@@ -386,7 +386,7 @@ app.get('/anomlies', (req, res) => {
 });
 
 app.get('/anomliesavecdesignation', (req, res) => {
-  const query = 'SELECT anomlies.id, anomlies.anomlie, anomlies.numero_inventaire, anomlies.created_at, anomlies.operateur, devices.device_name FROM anomlies JOIN devices ON anomlies.numero_inventaire = devices.numero_inventaire';
+  const query = 'SELECT anomlies.id, anomlies.anomlie, anomlies.numero_inventaire, anomlies.created_at, anomlies.operateur, devices.device_name FROM anomlies JOIN devices ON anomlies.numero_inventaire = devices.numero_inventaire ORDER BY anomlies.created_at DESC';
   db.query(query, (err, results) => {
     if (err) {
       res.status(500).send(err);
