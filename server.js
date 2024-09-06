@@ -356,6 +356,73 @@ app.delete('/devices/:id', (req, res) => {
   });
 });
 
+//--------------------------------------------------------- Anomalies
+
+
+app.use('/anomlies', authenticateJWT);
+
+app.post('/anomlies', (req, res) => {
+  const { anomlie, numero_inventaire, operateur } = req.body;
+  const createdAt = new Date();
+  const query = 'INSERT INTO anomlies (anomlie, numero_inventaire, created_at, operateur) VALUES (?, ?, ?, ?)';
+  db.query(query, [anomlie, numero_inventaire, createdAt, operateur], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).send(result);
+    }
+  });
+});
+
+app.get('/anomlies', (req, res) => {
+  const query = 'SELECT * FROM anomlies';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.get('/anomliesavecdesignation', (req, res) => {
+  const query = 'SELECT anomlies.id, anomlies.anomlie, anomlies.numero_inventaire, anomlies.created_at, anomlies.operateur, devices.device_name FROM anomlies JOIN devices ON anomlies.numero_inventaire = devices.numero_inventaire';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.put('/anomlies/:id', (req, res) => {
+  const { id } = req.params;
+  const { anomlie, numero_inventaire, operateur } = req.body;
+  const query = 'UPDATE anomlies SET anomlie = ?, numero_inventaire = ?, operateur = ? WHERE id = ?';
+  db.query(query, [anomlie, numero_inventaire, operateur, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+app.delete('/anomlies/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM anomlies WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+//--------------------------------------------------------- Anomalies
+
 //--------------------------------------------------------- Articles
 
 app.use('/articles', authenticateJWT);
