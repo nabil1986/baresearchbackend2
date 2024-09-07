@@ -258,6 +258,105 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 });
 
 
+app.post('/devices', async (req, res) => {
+  const {
+    device_name,
+    grease_quantity,
+    grease_period,
+    observation,
+    niveau,
+    numero_inventaire,
+    designation_grade_graisse,
+    ordre_passage,
+    equipement_localisation,
+    tempsGraissage,
+    photo,
+    gamme,
+    designation_grade_huile,
+    etage
+  } = req.body;
+
+  const createdAt = new Date();
+  const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+
+  const query = `
+    INSERT INTO devices
+    (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
+    designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage,
+    equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  // Exécution de la requête pour insérer les données dans la base de données
+  db.query(query, [
+    device_name,
+    grease_quantity,
+    grease_period,
+    observation,
+    niveau,
+    numero_inventaire,
+    designation_grade_graisse,
+    createdAt,
+    dateProchainGraissage,
+    ordre_passage,
+    equipement_localisation,
+    tempsGraissage,
+    photo,
+    gamme,
+    designation_grade_huile,
+    etage
+  ], async (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).send(result);
+
+      // Configuration de Nodemailer
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: false, // Assurez-vous que c'est correct selon votre service SMTP
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+        connectionTimeout: 5000 // Délai d'attente en ms
+      });
+
+      // Fonction pour envoyer un email
+      const sendEmail = async (to, subject, text) => {
+        try {
+          const mailOptions = {
+            from: '"Nabil" <n.kacimi@maghreblogiciel.com>',
+            to,
+            subject,
+            text,
+          };
+
+          // Utilisation d'await pour garantir que l'envoi de l'email se termine
+          const info = await transporter.sendMail(mailOptions);
+          console.log('Email envoyé: ' + info.response);
+        } catch (error) {
+          console.error('Erreur lors de l\'envoi de l\'email : ', error);
+        }
+      };
+
+      // Envoyer l'email après insertion réussie dans la base de données
+      const emailText = `Un nouvel appareil a été ajouté :
+        - Nom: ${device_name}
+        - Numéro d'inventaire: ${numero_inventaire}
+        - Quantité de graisse: ${grease_quantity}
+        - Période de graissage: ${grease_period}
+        - Observation: ${observation}
+        - Date du prochain graissage: ${dateProchainGraissage}`;
+
+      // Attendre que l'email soit envoyé
+      await sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
+    }
+  });
+});
+
+{/* -----------------------------------------------post devices sauvegardée
 app.post('/devices', (req, res) => {
   const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage } = req.body;
 
@@ -315,6 +414,11 @@ app.post('/devices', (req, res) => {
     }
   });
 });
+
+
+
+
+*/}
 
 app.get('/devices', (req, res) => {
   const query = 'SELECT * FROM devices';
