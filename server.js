@@ -315,7 +315,7 @@ app.post('/devices', async (req, res) => {
       const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT,
-        secure: false, // Assurez-vous que c'est correct selon votre service SMTP
+        secure: true, // Assurez-vous que c'est correct selon votre service SMTP
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
