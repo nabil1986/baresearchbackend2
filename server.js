@@ -355,65 +355,93 @@ app.post('/devices', async (req, res) => {
 });*/}
 
 
+//-------------------------------------------------postmark email
+// Fonction pour envoyer un email via Postmark
+const sendEmail = async (recipientEmail, deviceData) => {
+  try {
+    const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
------------------------------------------------post devices sauvegardée
-app.post('/devices', (req, res) => {
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage } = req.body;
+    // Structure du message
+    await client.sendEmail({
+      "From": "n.kacimi@maghreblogiciel.com",
+      "To": recipientEmail,
+      "Subject": "New Device Added",
+      "TextBody": `A new device has been added:\n
+        Name: ${deviceData.device_name}\n
+        Inventory Number: ${deviceData.numero_inventaire}\n
+        Observations: ${deviceData.observation}`
+    });
+
+    console.log("Email sent successfully to", recipientEmail);
+  } catch (error) {
+    console.error("Failed to send email:", error);
+    throw new Error('Error sending email');
+  }
+};
+
+
+
+//---------------------------------------------------post devices avec email
+
+// Fonction d'envoi d'email
+const sendDeviceEmail = async (device_name, numero_inventaire, observation) => {
+  try {
+    await sendEmail('s.mounir@maghreblogiciel.com', {
+      device_name,
+      numero_inventaire,
+      observation
+    });
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
+};
+
+// Route POST /devices
+app.post('/devices', async (req, res) => {
+  const {
+    device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
+    designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage,
+    photo, gamme, designation_grade_huile, etage
+  } = req.body;
 
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
+  const query = `
+    INSERT INTO devices
+    (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
+    designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage,
+    equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
 
-  const query = 'INSERT INTO devices (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage], (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(201).send(result);
+  try {
+    // Insertion des données dans la base de données
+    const result = await new Promise((resolve, reject) => {
+      db.query(query, [
+        device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
+        designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage,
+        equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage
+      ], (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
+    });
 
-      // Fonction sendEmail définie dans la portée de la route
-            const transporter = nodemailer.createTransport({
-              host: process.env.EMAIL_HOST,
-              port: process.env.EMAIL_PORT,
-              secure: false,
-              auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-              },
-              connectionTimeout: 5000, // délai d'attente en ms
-            });
+    // Envoyer l'email après l'insertion réussie
+    await sendDeviceEmail(device_name, numero_inventaire, observation);
 
-            const sendEmail = (to, subject, text) => {
-              const mailOptions = {
-                from: '"Nabil" <n.kacimi@maghreblogiciel.com>',
-                to,
-                subject,
-                text,
-              };
+    // Réponse au frontend après succès
+    res.status(201).send({ message: 'Device added successfully', result });
 
-              transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                  console.error('Error sending email: ', error);
-                } else {
-                  console.log('Email sent: ' + info.response);
-                }
-              });
-            };
-
-            // Envoyer l'email après l'insertion réussie dans la base de données
-            const emailText = `Un nouvel appareil a été ajouté:
-              - Nom: ${device_name}
-              - Numéro d'inventaire: ${numero_inventaire}
-              - Quantité de graisse: ${grease_quantity}
-              - Période de graissage: ${grease_period}
-              - Observation: ${observation}
-              - Date du prochain graissage: ${dateProchainGraissage}`;
-
-            sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
-
-    }
-  });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send({ error: 'Internal Server Error' });
+  }
 });
+
 
 
 app.get('/devices', (req, res) => {
