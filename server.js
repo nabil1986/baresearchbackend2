@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
+const postmark = require('postmark');
 
 
 const app = express();
@@ -257,6 +258,8 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
   });
 });
 
+// Créez une instance du client Postmark avec votre clé API
+const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
 app.post('/devices', async (req, res) => {
   const {
@@ -311,50 +314,43 @@ app.post('/devices', async (req, res) => {
     } else {
       res.status(201).send(result);
 
-      // Configuration de Nodemailer
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: true, // Assurez-vous que c'est correct selon votre service SMTP
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-        connectionTimeout: 5000 // Délai d'attente en ms
-      });
+    // Créer et envoyer un e-mail via Postmark
+          const sendEmail = async () => {
+            try {
+              const response = await client.sendEmail({
+                From: 'n.kacimi@maghreblogiciel.com', // Remplacez par votre adresse e-mail vérifiée dans Postmark
+                To: 's.mounir@maghreblogiciel.com', // Remplacez par l'adresse e-mail du destinataire
+                Subject: 'Nouvel Appareil Ajouté',
+                TextBody: `Un nouvel appareil a été ajouté :
+                  - Nom: ${device_name}
+                  - Numéro d'inventaire: ${numero_inventaire}
+                  - Quantité de graisse: ${grease_quantity}
+                  - Période de graissage: ${grease_period}
+                  - Observation: ${observation}
+                  - Date du prochain graissage: ${dateProchainGraissage}`,
+                HtmlBody: `<p>Un nouvel appareil a été ajouté :</p>
+                  <ul>
+                    <li>Nom: ${device_name}</li>
+                    <li>Numéro d'inventaire: ${numero_inventaire}</li>
+                    <li>Quantité de graisse: ${grease_quantity}</li>
+                    <li>Période de graissage: ${grease_period}</li>
+                    <li>Observation: ${observation}</li>
+                    <li>Date du prochain graissage: ${dateProchainGraissage}</li>
+                  </ul>`
+              });
 
-      // Fonction pour envoyer un email
-      const sendEmail = async (to, subject, text) => {
-        try {
-          const mailOptions = {
-            from: '"Nabil" <n.kacimi@maghreblogiciel.com>',
-            to,
-            subject,
-            text,
+              console.log('E-mail envoyé avec succès:', response);
+            } catch (error) {
+              console.error('Erreur lors de l\'envoi de l\'e-mail:', error);
+            }
           };
 
-          // Utilisation d'await pour garantir que l'envoi de l'email se termine
-          const info = await transporter.sendMail(mailOptions);
-          console.log('Email envoyé: ' + info.response);
-        } catch (error) {
-          console.error('Erreur lors de l\'envoi de l\'email : ', error);
-        }
-      };
-
-      // Envoyer l'email après insertion réussie dans la base de données
-      const emailText = `Un nouvel appareil a été ajouté :
-        - Nom: ${device_name}
-        - Numéro d'inventaire: ${numero_inventaire}
-        - Quantité de graisse: ${grease_quantity}
-        - Période de graissage: ${grease_period}
-        - Observation: ${observation}
-        - Date du prochain graissage: ${dateProchainGraissage}`;
-
-      // Attendre que l'email soit envoyé
-      await sendEmail('kaciminabil@gmail.com', 'Nouvel Appareil Ajouté', emailText);
+          // Appeler la fonction pour envoyer l'e-mail
+          await sendEmail();
     }
   });
 });
+
 
 {/* -----------------------------------------------post devices sauvegardée
 app.post('/devices', (req, res) => {
