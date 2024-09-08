@@ -262,94 +262,98 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
 app.post('/devices', async (req, res) => {
-  const {
-    device_name,
-    grease_quantity,
-    grease_period,
-    observation,
-    niveau,
-    numero_inventaire,
-    designation_grade_graisse,
-    ordre_passage,
-    equipement_localisation,
-    tempsGraissage,
-    photo,
-    gamme,
-    designation_grade_huile,
-    etage
-  } = req.body;
+  try {
+    console.log('Request body:', req.body);
+    const {
+      device_name,
+      grease_quantity,
+      grease_period,
+      observation,
+      niveau,
+      numero_inventaire,
+      designation_grade_graisse,
+      ordre_passage,
+      equipement_localisation,
+      tempsGraissage,
+      photo,
+      gamme,
+      designation_grade_huile,
+      etage
+    } = req.body;
 
-  const createdAt = new Date();
-  const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+    const createdAt = new Date();
+    const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
 
-  const query = `
-    INSERT INTO devices
-    (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
-    designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage,
-    equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+    console.log('Inserting data into database...');
+    const query = `
+      INSERT INTO devices
+      (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
+      designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage,
+      equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-  // Exécution de la requête pour insérer les données dans la base de données
-  db.query(query, [
-    device_name,
-    grease_quantity,
-    grease_period,
-    observation,
-    niveau,
-    numero_inventaire,
-    designation_grade_graisse,
-    createdAt,
-    dateProchainGraissage,
-    ordre_passage,
-    equipement_localisation,
-    tempsGraissage,
-    photo,
-    gamme,
-    designation_grade_huile,
-    etage
-  ], async (err, result) => {
-    if (err) {
-      res.status(500).send(err);
-    } else {
-      res.status(201).send(result);
+    await new Promise((resolve, reject) => {
+      db.query(query, [
+        device_name,
+        grease_quantity,
+        grease_period,
+        observation,
+        niveau,
+        numero_inventaire,
+        designation_grade_graisse,
+        createdAt,
+        dateProchainGraissage,
+        ordre_passage,
+        equipement_localisation,
+        tempsGraissage,
+        photo,
+        gamme,
+        designation_grade_huile,
+        etage
+      ], (err, result) => {
+        if (err) {
+          console.error('Database query error:', err);
+          return reject(err);
+        }
+        resolve(result);
+      });
+    });
+
+    console.log('Data inserted successfully.');
 
     // Créer et envoyer un e-mail via Postmark
-          const sendEmail = async () => {
-            try {
-              const response = await client.sendEmail({
-                From: 'n.kacimi@maghreblogiciel.com', // Remplacez par votre adresse e-mail vérifiée dans Postmark
-                To: 's.mounir@maghreblogiciel.com', // Remplacez par l'adresse e-mail du destinataire
-                Subject: 'Nouvel Appareil Ajouté',
-                TextBody: `Un nouvel appareil a été ajouté :
-                  - Nom: ${device_name}
-                  - Numéro d'inventaire: ${numero_inventaire}
-                  - Quantité de graisse: ${grease_quantity}
-                  - Période de graissage: ${grease_period}
-                  - Observation: ${observation}
-                  - Date du prochain graissage: ${dateProchainGraissage}`,
-                HtmlBody: `<p>Un nouvel appareil a été ajouté :</p>
-                  <ul>
-                    <li>Nom: ${device_name}</li>
-                    <li>Numéro d'inventaire: ${numero_inventaire}</li>
-                    <li>Quantité de graisse: ${grease_quantity}</li>
-                    <li>Période de graissage: ${grease_period}</li>
-                    <li>Observation: ${observation}</li>
-                    <li>Date du prochain graissage: ${dateProchainGraissage}</li>
-                  </ul>`
-              });
+    console.log('Sending email...');
+    const response = await client.sendEmail({
+      From: 'n.kacimi@maghreblogiciel.com',
+      To: 's.mounir@maghreblogiciel.com',
+      Subject: 'Nouvel Appareil Ajouté',
+      TextBody: `Un nouvel appareil a été ajouté :
+        - Nom: ${device_name}
+        - Numéro d'inventaire: ${numero_inventaire}
+        - Quantité de graisse: ${grease_quantity}
+        - Période de graissage: ${grease_period}
+        - Observation: ${observation}
+        - Date du prochain graissage: ${dateProchainGraissage}`,
+      HtmlBody: `<p>Un nouvel appareil a été ajouté :</p>
+        <ul>
+          <li>Nom: ${device_name}</li>
+          <li>Numéro d'inventaire: ${numero_inventaire}</li>
+          <li>Quantité de graisse: ${grease_quantity}</li>
+          <li>Période de graissage: ${grease_period}</li>
+          <li>Observation: ${observation}</li>
+          <li>Date du prochain graissage: ${dateProchainGraissage}</li>
+        </ul>`
+    });
 
-              console.log('E-mail envoyé avec succès:', response);
-            } catch (error) {
-              console.error('Erreur lors de l\'envoi de l\'e-mail:', error);
-            }
-          };
-
-          // Appeler la fonction pour envoyer l'e-mail
-          await sendEmail();
-    }
-  });
+    console.log('E-mail envoyé avec succès:', response);
+    res.status(201).send(result);
+  } catch (error) {
+    console.error('Erreur dans la fonction POST /devices:', error);
+    res.status(500).send('Erreur interne du serveur');
+  }
 });
+
 
 
 {/* -----------------------------------------------post devices sauvegardée
