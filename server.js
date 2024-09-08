@@ -259,7 +259,7 @@ app.get('/devices/check-numero-inventaire', (req, res) => {
 });
 
 // Créez une instance du client Postmark avec votre clé API
-const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
+{/*const client = new postmark.ServerClient(process.env.POSTMARK_API_KEY);
 
 app.post('/devices', async (req, res) => {
   try {
@@ -352,11 +352,11 @@ app.post('/devices', async (req, res) => {
     console.error('Erreur dans la fonction POST /devices:', error);
     res.status(500).send('Erreur interne du serveur');
   }
-});
+});*/}
 
 
 
-{/* -----------------------------------------------post devices sauvegardée
+-----------------------------------------------post devices sauvegardée
 app.post('/devices', (req, res) => {
   const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage } = req.body;
 
@@ -415,10 +415,6 @@ app.post('/devices', (req, res) => {
   });
 });
 
-
-
-
-*/}
 
 app.get('/devices', (req, res) => {
   const query = 'SELECT * FROM devices';
