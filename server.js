@@ -660,6 +660,17 @@ app.get('/articles/huile', (req, res) => {
   });
 });
 
+app.get('/articles/autre', (req, res) => {
+  const query = 'SELECT designation_article FROM articles where type_article = "A" ';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
 //--------------------------------------------------------- Articles
 
 //--------------------------------------------------------- Graisse période
