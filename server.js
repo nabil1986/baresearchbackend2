@@ -401,18 +401,19 @@ app.post('/devices', async (req, res) => {
   const {
     device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
     designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage,
-    photo, gamme, designation_grade_huile, etage
+    photo, gamme, designation_grade_huile, etage, huile_quantity, huile_periode, type_organe
   } = req.body;
 
   const createdAt = new Date();
   const dateProchainGraissage = calculateNextGreasingDate(createdAt, grease_period);
+  const dateProchainVidange = calculateNextGreasingDate(createdAt, huile_periode);
 
   const query = `
     INSERT INTO devices
     (device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
     designation_grade_graisse, created_at, date_prochain_graissage, ordre_passage,
-    equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, huile_quantity, huile_periode, type_organe, date_prochain_vidange)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   try {
@@ -421,7 +422,7 @@ app.post('/devices', async (req, res) => {
       db.query(query, [
         device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire,
         designation_grade_graisse, createdAt, dateProchainGraissage, ordre_passage,
-        equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage
+        equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, huile_quantity, huile_periode, type_organe, dateProchainVidange
       ], (err, result) => {
         if (err) {
           return reject(err);
@@ -457,10 +458,10 @@ app.get('/devices', (req, res) => {
 
 app.put('/devices/:id', (req, res) => {
   const { id } = req.params;
-  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage } = req.body;
+  const { device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, huile_quantity, huile_periode, type_organe } = req.body;
 
-  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ?, photo = ?, gamme = ?, designation_grade_huile = ?, etage = ? WHERE id = ?';
-  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, id], (err, result) => {
+  const query = 'UPDATE devices SET device_name = ?, grease_quantity = ?, grease_period = ?, observation = ?, niveau = ?, numero_inventaire = ?, designation_grade_graisse = ?, ordre_passage = ?, equipement_localisation = ?, tempsGraissage = ?, photo = ?, gamme = ?, designation_grade_huile = ?, etage = ?, huile_quantity = ?, huile_periode = ?, type_organe = ? WHERE id = ?';
+  db.query(query, [device_name, grease_quantity, grease_period, observation, niveau, numero_inventaire, designation_grade_graisse, ordre_passage, equipement_localisation, tempsGraissage, photo, gamme, designation_grade_huile, etage, huile_quantity, huile_periode, type_organe, id], (err, result) => {
     if (err) {
       res.status(500).send(err);
     } else {
