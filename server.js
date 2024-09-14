@@ -760,6 +760,72 @@ app.delete('/operationgraissage/:id', (req, res) => {
 
 //--------------------------------------------------------- Opération Graisse
 
+//--------------------------------------------------------- Opération Vidange
+app.use('/operationvidange', authenticateJWT);
+
+app.post('/operationvidange', (req, res) => {
+  const { numero_inventaire, ordre, operateur } = req.body;
+  const query = 'INSERT INTO operationvidange (numero_inventaire, ordre, operateur) VALUES (?, ?, ?)';
+  db.query(query, [numero_inventaire, ordre, operateur], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(201).send(result);
+    }
+  });
+});
+
+app.get('/operationvidange', (req, res) => {
+  const query = 'SELECT * FROM operationvidange';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.get('/operationvidangeavecdesignation', (req, res) => {
+  const query = 'SELECT * FROM operationvidange JOIN devices ON operationvidange.numero_inventaire = devices.numero_inventaire';
+  db.query(query, (err, results) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(results);
+    }
+  });
+});
+
+app.put('/operationvidange/:id', (req, res) => {
+  const { id } = req.params;
+  const { numero_inventaire, ordre, operateur } = req.body;
+  const query = 'UPDATE operationvidange SET numero_inventaire = ?, ordre = ?, operateur = ? WHERE id = ?';
+  db.query(query, [numero_inventaire, ordre, operateur, id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+app.delete('/operationvidange/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM operationvidange WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+
+
+//--------------------------------------------------------- Opération Vidange
+
 
 //--------------------------------------------------------- typeControle
 
@@ -849,6 +915,43 @@ app.put('/devices/:id/date-prochain-graissage', authenticateJWT, (req, res) => {
 
 
 //--------------------------------------------------------- Update date prochain graissage dans devices apres operation de graissage
+
+
+// --------------------------------------------------------------------Update date prochain graissage dans devices apres operation de vidange
+app.use('/devices/:id/date-prochain-vidange', authenticateJWT);
+app.put('/devices/:id/date-prochain-vidange', authenticateJWT, (req, res) => {
+  const { id } = req.params;
+
+  // Étape 1: Récupérer le huile_periode du device
+  const getDeviceQuery = 'SELECT huile_periode FROM devices WHERE id = ?';
+  db.query(getDeviceQuery, [id], (err, results) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    if (results.length === 0) {
+      return res.status(404).send('Device not found');
+    }
+
+    const huile_periode = results[0].huile_periode;
+
+    // Étape 2: Calculer la date de prochain vidange
+    const createdAt = new Date();
+    const dateProchainVidange = calculateNextGreasingDate(createdAt, huile_periode);
+
+    // Étape 3: Mettre à jour la date de prochain vidange
+    const updateQuery = 'UPDATE devices SET date_prochain_vidange = ? WHERE id = ?';
+    db.query(updateQuery, [dateProchainVidange, id], (err, result) => {
+      if (err) {
+        res.status(500).send(err);
+      } else {
+        res.status(200).send(result);
+      }
+    });
+  });
+});
+
+
+//--------------------------------------------------------- Update date prochain graissage dans devices apres operation de vidange
 
 
 app.get('/', (req, res) => {
