@@ -10,10 +10,9 @@ const postmark = require('postmark');
 
 
 const app = express();
-// Augmente la limite de la taille des fichiers pour le body-parser
-app.use(bodyParser.json({ limit: '5mb' }));  // Limite pour JSON
-app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));  // Limite pour les données URL-encoded
+app.use(bodyParser.json());
 app.use(cors());
+
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
