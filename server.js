@@ -10,7 +10,8 @@ const postmark = require('postmark');
 
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json({ limit: '50mb' })); // Augmente la limite pour les données JSON
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Augmente la limite pour les données URL-encoded
 app.use(cors());
 
 
